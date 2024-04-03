@@ -158,7 +158,7 @@ int main(void) {
 						uart0_put("Slope 3\n");
 						sprintf(temp,"%i\n\r", (int)slope1);
 						uart0_put(temp);
-            forward(0.3);
+            forward(0.8);
             straight();
         }
         
