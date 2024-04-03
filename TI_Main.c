@@ -23,8 +23,14 @@
 extern unsigned char OLED_clr_data[1024];
 extern unsigned char OLED_TEXT_ARR[1024];
 extern unsigned char OLED_GRAPH_ARR[1024];
+//Set up OLED variables
+unsigned char state1[16] = "State 1";
+unsigned char state2[16] = "State 2";
+unsigned char state3[16] = "State 3";
 extern uint16_t line[128];
 extern char str[STR_SIZE];
+
+char temp[STR_SIZE];
 
 // Global variables
 
@@ -36,8 +42,11 @@ int high_index = 78;
 
 char ctr[STR_SIZE];
 int switch_state = 0;
-double slope1;
+double slope1 = 0;
 float tol = 0.01;
+
+int switch1_state = 0;
+int switch2_state = 0;
 
 void init() {
     // Init display
@@ -76,6 +85,20 @@ void stop_motors(void) {
 }
 
 
+void turn_left(){
+	      TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
+        TIMER_A2_PWM_DutyCycle(0.05, 1); // Centered
+
+}
+void turn_right(){
+        TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
+        TIMER_A2_PWM_DutyCycle(0.1, 1); // Centered
+}
+void straight(){
+	
+	      TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
+        TIMER_A2_PWM_DutyCycle(0.075, 1); // Centered
+}
 
 // Center of the graph should always be a slope of 0 if it's on the right course
 // so if the slope becomes + or -, have to turn the car
@@ -97,6 +120,15 @@ int main(void) {
     TIMER_A2_PWM_DutyCycle(0.05, 1);
     delay(200);
     uart0_put("INIT\n");
+		/*while (switch2_state == 0){
+			if (switch1_state == 0 && ){
+				OLED_draw_line(1,1, state1);
+				OLED_write_display(OLED_TEXT_ARR);
+				delay(500);
+		}
+			if (Switch2_Pressed == TRUE){
+				switch2_state += 1;
+	}*/
     while(1) {
         camsequence();
         OLED_DisplayCameraData(line);
@@ -105,28 +137,29 @@ int main(void) {
         if (slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
             slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
             // This Needs to Turn a direction
-						uart0_put("1\n");
+						uart0_put("Slope 1\n");
+						sprintf(temp,"%i\n\r", (int)slope1);
+						uart0_put(temp);
 						forward(0.3);
-            TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
-            TIMER_A2_PWM_DutyCycle(0.05, 1); // Centered
+            turn_left();
 							
 							
         } else if (slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
                    slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
             // This Needs to Turn a direction
-						uart0_put("2\n");
+						uart0_put("Slope 2\n");
+						sprintf(temp,"%i\n\r", (int)slope1);
+						uart0_put(temp);
 						forward(0.3);
-            TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
-            TIMER_A2_PWM_DutyCycle(0.1, 1); // Centered
-										 
+						turn_right();
 										 
         } else {
             // This Needs to Turn a direction
-						uart0_put("3\n");
+						uart0_put("Slope 3\n");
+						sprintf(temp,"%i\n\r", (int)slope1);
+						uart0_put(temp);
             forward(0.3);
-            
-            TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
-            TIMER_A2_PWM_DutyCycle(0.075, 1); // Centered
+            straight();
         }
         
         if (carpet_detection() == TRUE) {
