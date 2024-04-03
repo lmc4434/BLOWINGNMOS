@@ -50,7 +50,8 @@ int switch2_state = 0;
 
 void init() {
     // Init display
-    uart0_init();
+    uart2_init();
+		uart2_put("Bluetooth on");
     P3->SEL0 &= ~BIT6;
     P3->SEL0 &= ~BIT7;
     P3->SEL1 &= ~BIT6;
@@ -137,9 +138,9 @@ int main(void) {
         if (slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
             slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
             // This Needs to Turn a direction
-						uart0_put("Slope 1\n");
-						sprintf(temp,"%i\n\r", (int)slope1);
-						uart0_put(temp);
+						uart2_put("Slope 1: ");
+						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
+						uart2_put(temp);
 						forward(0.3);
             turn_left();
 							
@@ -147,18 +148,18 @@ int main(void) {
         } else if (slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
                    slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
             // This Needs to Turn a direction
-						uart0_put("Slope 2\n");
-						sprintf(temp,"%i\n\r", (int)slope1);
-						uart0_put(temp);
+						uart2_put("Slope 2: ");
+						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
+						uart2_put(temp);
 						forward(0.3);
 						turn_right();
 										 
         } else {
             // This Needs to Turn a direction
-						uart0_put("Slope 3\n");
-						sprintf(temp,"%i\n\r", (int)slope1);
-						uart0_put(temp);
-            forward(0.8);
+						uart2_put("Slope 3: ");
+						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
+						uart2_put(temp);
+            forward(0.3);
             straight();
         }
         
