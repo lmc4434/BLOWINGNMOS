@@ -75,6 +75,8 @@ void stop_motors(void) {
     TIMER_A0_PWM_Init(4800, 0.0, 4);
 }
 
+
+
 // Center of the graph should always be a slope of 0 if it's on the right course
 // so if the slope becomes + or -, have to turn the car
 double generate_slope(int y2, int y1, int x2, int x1) {
@@ -85,11 +87,11 @@ double generate_slope(int y2, int y1, int x2, int x1) {
 // Figure out if it's a parabola - take index and value at a certain point and then the 
 // exact point reflected over the axis of symmetry. If it is a slope of 0 +- a tol
 // It is a parabola and it means it's on carpet
-int carpet_detection(int y2, int y1, int x2, int x1) {
-    double result = (y2 - y1) / (x2 - x1);
-    return result;
+BOOLEAN carpet_detection() {
+    if (line[64] < 6000){
+			return TRUE;
 }
-
+}
 int main(void) {
     init();
     TIMER_A2_PWM_DutyCycle(0.05, 1);
@@ -98,6 +100,7 @@ int main(void) {
     while(1) {
         camsequence();
         OLED_DisplayCameraData(line);
+				
         
         if (slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
             slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
@@ -126,9 +129,10 @@ int main(void) {
             TIMER_A2_PWM_DutyCycle(0.075, 1); // Centered
         }
         
-        if (slope1 <= carpet_detection(line[high_index], line[low_index], high_index, low_index) - tol &&
-            slope1 <= carpet_detection(line[high_index], line[low_index], high_index, low_index) + tol) {
+        if (carpet_detection() == TRUE) {
             // Additional logic for carpet detection
+					stop_motors();
+					
         }
     }
 }
