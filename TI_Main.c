@@ -35,10 +35,10 @@ char temp[STR_SIZE];
 // Global variables
 
 // Low Index
-int low_index = 50;
+int low_index = 45; //50
 
 // High Index
-int high_index = 78;
+int high_index = 83; //78
 
 char ctr[STR_SIZE];
 int switch_state = 0;
@@ -86,18 +86,19 @@ void stop_motors(void) {
 }
 
 
-void turn_left(){
-	      TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
-        TIMER_A2_PWM_DutyCycle(0.05, 1); // Centered
+void turn_left(double percent){
+  //double modulate = 0.025 / percent;
+	//modulate = 0.025 + modulate;
+	//0.075 - modulate
+	TIMER_A2_PWM_DutyCycle(0.625, 1); //Left 0.05
 
 }
-void turn_right(){
-        TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
-        TIMER_A2_PWM_DutyCycle(0.1, 1); // Centered
+void turn_right(double percent){
+	double modulate = 0.025 / percent;
+	modulate = 0.025 - modulate;
+	TIMER_A2_PWM_DutyCycle(0.075 + modulate, 1); // Right 0.1
 }
 void straight(){
-	
-	      TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
         TIMER_A2_PWM_DutyCycle(0.075, 1); // Centered
 }
 
@@ -134,25 +135,24 @@ int main(void) {
         camsequence();
         OLED_DisplayCameraData(line);
 				
+				double gen_slope = generate_slope(line[high_index], line[low_index], high_index, low_index);
         
-        if (slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
-            slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
+        if (slope1 <= gen_slope - tol && slope1 <= gen_slope + tol) {
             // This Needs to Turn a direction
 						uart2_put("Slope 1: ");
 						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
 						uart2_put(temp);
 						forward(0.3);
-            turn_left();
+            turn_left(gen_slope);
 							
 							
-        } else if (slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
-                   slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
+        } else if (slope1 >= gen_slope - tol && slope1 >= gen_slope + tol) {
             // This Needs to Turn a direction
 						uart2_put("Slope 2: ");
 						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
 						uart2_put(temp);
 						forward(0.3);
-						turn_right();
+						turn_right(gen_slope);
 										 
         } else {
             // This Needs to Turn a direction
