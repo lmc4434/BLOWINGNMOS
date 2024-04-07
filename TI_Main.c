@@ -34,6 +34,8 @@ char temp[STR_SIZE];
 
 // Global variables
 
+
+
 // Low Index
 int low_index = 45; //50
 
@@ -51,7 +53,7 @@ int switch2_state = 0;
 void init() {
     // Init display
     uart2_init();
-		uart2_put("Bluetooth on");
+    uart2_put("Bluetooth on");
     P3->SEL0 &= ~BIT6;
     P3->SEL0 &= ~BIT7;
     P3->SEL1 &= ~BIT6;
@@ -115,6 +117,8 @@ double generate_slope(int y2, int y1, int x2, int x1) {
 BOOLEAN carpet_detection() {
     if (line[64] < 6000){
 			return TRUE;
+}else{
+	return FALSE;
 }
 }
 int main(void) {
@@ -132,7 +136,7 @@ int main(void) {
 				switch2_state += 1;
 	}*/
     while(1) {
-        camsequence();
+        
         OLED_DisplayCameraData(line);
 				
 				double gen_slope = generate_slope(line[high_index], line[low_index], high_index, low_index);
@@ -167,6 +171,8 @@ int main(void) {
             // Additional logic for carpet detection
 					stop_motors();
 					
+
+					
         }
     }
 }
@@ -180,3 +186,4 @@ int main(void) {
  * 
  * delay(1000);
  */
+
