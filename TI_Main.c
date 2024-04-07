@@ -46,6 +46,15 @@ int switch_state = 0;
 double slope1 = 0;
 float tol = 0.01;
 
+float servo_current = 0.0;
+float servo_previous = 0.075;
+float s_err0 = 0.0;
+float s_err1 = 0.0;
+float s_err2 = 0.0;
+float Kp = 0.45;
+float Ki = 0.15;
+float Kd = 0.20;
+
 int switch1_state = 0;
 int switch2_state = 0;
 
@@ -70,6 +79,37 @@ void init() {
     OLED_display_on();
     OLED_display_clear();
     OLED_display_on();
+}
+
+int find_center(void){
+    BOOLEAN flag = FALSE;
+    int left_val;
+    int right_val;
+    for (int i = 0; i < 127; i++){
+        if (flag == FALSE){
+            if (BinaryData[i] == 1){
+                left_val = i;
+                flag = TRUE;
+                }
+    }else if (flag == TRUE){
+        if (BinaryData[i] == 0){
+            right_val = i;
+            flag = FALSE;
+        }
+    }
+	}
+  return (right_val + left_val)/2;
+}
+
+float PID(void){
+	int center = find_center();
+	s_err0 = 63 - center; 
+	servo_current = servo_previous + Kp*(s_err0-s_err1) + 
+		Ki*((s_err0+s_err1)/2) + Kd*(s_err0-(2*s_err1)+s_err2);
+	servo_previous = servo_current;
+	s_err2 = s_err1;
+	s_err1 = s_err0;
+	return servo_current;
 }
 
 void forward(float speed) {
@@ -134,11 +174,11 @@ int main(void) {
     while(1) {
         bin_enc();
         OLED_DisplayCameraData(BinaryData);
-				uart2_put("White Val: ");
-				sprintf(temp,"%i\n\r", BinaryData[64]);
+				uart2_put("Center Val: ");
+				sprintf(temp,"%i\n\r", find_center());
 				uart2_put(temp);
-				uart2_put("Black Val: ");
-				sprintf(temp,"%i\n\r", BinaryData[3]);
+				uart2_put("Servo Val: ");
+				sprintf(temp,"%f\n\r", PID());
 				uart2_put(temp);
 				
         
