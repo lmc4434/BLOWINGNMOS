@@ -29,18 +29,17 @@ unsigned char state2[16] = "State 2";
 unsigned char state3[16] = "State 3";
 extern uint16_t line[128];
 extern char str[STR_SIZE];
-
+extern uint16_t SmoothData[128];
+extern uint16_t BinaryData[128];
 char temp[STR_SIZE];
 
 // Global variables
 
-
-
 // Low Index
-int low_index = 45; //50
+int low_index = 50;
 
 // High Index
-int high_index = 83; //78
+int high_index = 78;
 
 char ctr[STR_SIZE];
 int switch_state = 0;
@@ -53,7 +52,7 @@ int switch2_state = 0;
 void init() {
     // Init display
     uart2_init();
-    uart2_put("Bluetooth on");
+		uart2_put("Bluetooth on");
     P3->SEL0 &= ~BIT6;
     P3->SEL0 &= ~BIT7;
     P3->SEL1 &= ~BIT6;
@@ -88,19 +87,18 @@ void stop_motors(void) {
 }
 
 
-void turn_left(double percent){
-  //double modulate = 0.025 / percent;
-	//modulate = 0.025 + modulate;
-	//0.075 - modulate
-	TIMER_A2_PWM_DutyCycle(0.625, 1); //Left 0.05
+void turn_left(){
+	      TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
+        TIMER_A2_PWM_DutyCycle(0.05, 1); // Centered
 
 }
-void turn_right(double percent){
-	double modulate = 0.025 / percent;
-	modulate = 0.025 - modulate;
-	TIMER_A2_PWM_DutyCycle(0.075 + modulate, 1); // Right 0.1
+void turn_right(){
+        TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
+        TIMER_A2_PWM_DutyCycle(0.1, 1); // Centered
 }
 void straight(){
+	
+	      TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
         TIMER_A2_PWM_DutyCycle(0.075, 1); // Centered
 }
 
@@ -117,8 +115,6 @@ double generate_slope(int y2, int y1, int x2, int x1) {
 BOOLEAN carpet_detection() {
     if (line[64] < 6000){
 			return TRUE;
-}else{
-	return FALSE;
 }
 }
 int main(void) {
@@ -136,27 +132,34 @@ int main(void) {
 				switch2_state += 1;
 	}*/
     while(1) {
-        
-        OLED_DisplayCameraData(line);
+        bin_enc();
+        OLED_DisplayCameraData(BinaryData);
+				uart2_put("White Val: ");
+				sprintf(temp,"%i\n\r", BinaryData[64]);
+				uart2_put(temp);
+				uart2_put("Black Val: ");
+				sprintf(temp,"%i\n\r", BinaryData[3]);
+				uart2_put(temp);
 				
-				double gen_slope = generate_slope(line[high_index], line[low_index], high_index, low_index);
         
-        if (slope1 <= gen_slope - tol && slope1 <= gen_slope + tol) {
+        if (slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
+            slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
             // This Needs to Turn a direction
 						uart2_put("Slope 1: ");
 						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
 						uart2_put(temp);
 						forward(0.3);
-            turn_left(gen_slope);
+            turn_left();
 							
 							
-        } else if (slope1 >= gen_slope - tol && slope1 >= gen_slope + tol) {
+        } else if (slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
+                   slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
             // This Needs to Turn a direction
 						uart2_put("Slope 2: ");
 						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
 						uart2_put(temp);
 						forward(0.3);
-						turn_right(gen_slope);
+						turn_right();
 										 
         } else {
             // This Needs to Turn a direction
@@ -171,8 +174,6 @@ int main(void) {
             // Additional logic for carpet detection
 					stop_motors();
 					
-
-					
         }
     }
 }
@@ -186,4 +187,3 @@ int main(void) {
  * 
  * delay(1000);
  */
-
