@@ -24,10 +24,10 @@
 //Set Variables
 
 
-float SmoothData[128];
-int BinaryData[128];
-int bin_threshold = 2000;
 
+int bin_threshold = 15000;
+uint16_t SmoothData[128];
+uint16_t BinaryData[128];
 extern uint16_t line[128];
 
 void INIT_Camera(void) {
@@ -42,11 +42,12 @@ void INIT_Camera(void) {
 void camsmooth(void) {
        // Function that brings Fresh Data into RawData
 	for (int i = 2; i < 125; i++){
-		SmoothData[i] = (line[i-2] + line[i-1] + line[i] + line[i+1] line[i+2])/5;	
+		SmoothData[i] = (int)(line[i-2] + line[i-1] + line[i] + line[i+1]+ line[i+2])/5;	
     }	
 }
 
 void bin_enc(void){
+	camsmooth();
 	for(int i = 0; i < 127; i++){
 		if(SmoothData[i] > bin_threshold){
 			BinaryData[i] = 1;
@@ -55,27 +56,3 @@ void bin_enc(void){
 		}
 	}
 }
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
