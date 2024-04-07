@@ -24,14 +24,11 @@
 //Set Variables
 
 
-int rawData;
 float SmoothData[128];
-float LPF_Beta = 0.025; // 0<ß<1
-
+int BinaryData[128];
+int bin_threshold = 2000;
 
 extern uint16_t line[128];
-
-
 
 void INIT_Camera(void) {
     DisableInterrupts();
@@ -43,15 +40,20 @@ void INIT_Camera(void) {
 }
 
 void camsmooth(void) {
-    // LPF: Y(n) = (1-ß)*Y(n-1) + (ß*X(n))) = Y(n-1) - (ß*(Y(n-1)-X(n)));
-    while(1){
        // Function that brings Fresh Data into RawData
-			for (int i = 0; i < 127; i++){
-       rawData = line[i];
-       SmoothData[i] = SmoothData[i] - (LPF_Beta * (SmoothData[i] - rawData));
-			}
-    }
-		
+	for (int i = 2; i < 125; i++){
+		SmoothData[i] = (line[i-2] + line[i-1] + line[i] + line[i+1] line[i+2])/5;	
+    }	
+}
+
+void bin_enc(void){
+	for(int i = 0; i < 127; i++){
+		if(SmoothData[i] > bin_threshold){
+			BinaryData[i] = 1;
+		} else {
+			BinaryData[i] = 0;
+		}
+	}
 }
    
 
