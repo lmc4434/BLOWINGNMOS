@@ -12,6 +12,7 @@ static char str[STR_SIZE];
 
 // Function prototypes for camera functionality
 void INIT_Camera(void);
-void camsequence(void);
+void camsmooth(void);
+void bin_enc(void);
 
 #endif /* CAMERA_H */
