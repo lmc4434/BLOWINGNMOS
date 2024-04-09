@@ -35,6 +35,44 @@ char temp[STR_SIZE];
 
 // Global variables
 
+
+//PID SETUP
+float servo_position = 0.075;
+float setpoint = 0.075;
+float dt = 0.1; 
+
+
+float Kp = 1.0;
+float Ki = 0.1; 
+float Kd = 0.01; 
+
+float integral = 0;
+float prev_error = 0;
+
+
+float calculatePID(float error) {
+    integral += error * dt;
+    float derivative = (error - prev_error) / dt;
+    float output = Kp * error + Ki * integral + Kd * derivative;
+    prev_error = error;
+    return output;
+}
+
+float updateServoPosition(float control_signal) {
+    // Update servo position based on control signal
+    servo_position += control_signal;
+    // Ensure servo position stays within the specified range
+    if (servo_position < 0.05) {
+        servo_position = 0.05;
+    } else if (servo_position > 0.1) {
+        servo_position = 0.1;
+    }
+    // Return the updated servo position
+    return servo_position;
+}
+
+//END PID SETUP
+
 // Low Index
 int low_index = 50;
 
@@ -51,9 +89,9 @@ float servo_previous = 0.075;
 float s_err0 = 0.0;
 float s_err1 = 0.0;
 float s_err2 = 0.0;
-float Kp = 0.45;
-float Ki = 0.15;
-float Kd = 0.20;
+//float Kp = 0.45;
+//float Ki = 0.15;
+//float Kd = 0.20;
 
 int switch1_state = 0;
 int switch2_state = 0;
@@ -125,22 +163,20 @@ void stop_motors(void) {
     TIMER_A0_PWM_Init(4800, 0.0, 3);
     TIMER_A0_PWM_Init(4800, 0.0, 4);
 }
+void reverse_motors(float speed){
+    TIMER_A0_PWM_Init(4800, speed, 1);
+    TIMER_A0_PWM_Init(4800, 0.0, 2);
+    TIMER_A0_PWM_Init(4800, speed, 3);
+    TIMER_A0_PWM_Init(4800, 0.0, 4);
+}
 
 
-void turn_left(){
+void turn(amount){
 	      TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
-        TIMER_A2_PWM_DutyCycle(0.05, 1); // Centered
+        TIMER_A2_PWM_DutyCycle(amount, 1); // Centered
 
 }
-void turn_right(){
-        TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
-        TIMER_A2_PWM_DutyCycle(0.1, 1); // Centered
-}
-void straight(){
-	
-	      TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
-        TIMER_A2_PWM_DutyCycle(0.075, 1); // Centered
-}
+
 
 // Center of the graph should always be a slope of 0 if it's on the right course
 // so if the slope becomes + or -, have to turn the car
@@ -174,6 +210,14 @@ int main(void) {
     while(1) {
         bin_enc();
         OLED_DisplayCameraData(BinaryData);
+				// Check This
+				int square_wave_center = find_center();
+				float error = setpoint - ((float)square_wave_center / 128) * (0.1 - 0.05) + 0.05;
+				float control_signal = calculatePID(error);
+				//End
+			
+			
+			
 				uart2_put("Center Val: ");
 				sprintf(temp,"%i\n\r", find_center());
 				uart2_put(temp);
@@ -181,42 +225,20 @@ int main(void) {
 				sprintf(temp,"%f\n\r", PID());
 				uart2_put(temp);
 				
-        
-        if (slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
-            slope1 <= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
+        if (carpet_detection() != TRUE) {
             // This Needs to Turn a direction
-						uart2_put("Slope 1: ");
-						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
-						uart2_put(temp);
-						forward(0.3);
-            turn_left();
-							
-							
-        } else if (slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) - tol &&
-                   slope1 >= generate_slope(line[high_index], line[low_index], high_index, low_index) + tol) {
-            // This Needs to Turn a direction
-						uart2_put("Slope 2: ");
-						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
-						uart2_put(temp);
-						forward(0.3);
-						turn_right();
-										 
-        } else {
-            // This Needs to Turn a direction
-						uart2_put("Slope 3: ");
-						sprintf(temp,"%i\n\r", (int)generate_slope(line[high_index], line[low_index], high_index, low_index));
-						uart2_put(temp);
             forward(0.3);
-            straight();
+            turn(updateServoPosition(control_signal));
+						uart2_put("Turn Amount: ");
+						sprintf(temp,"%i\n\r", (int)(updateServoPosition(control_signal)*1000));
+						uart2_put(temp);
         }
-        
-        if (carpet_detection() == TRUE) {
-            // Additional logic for carpet detection
+				else{
 					stop_motors();
 					
+				}
         }
     }
-}
 
 /*
  * 
