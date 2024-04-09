@@ -95,6 +95,9 @@ float servo_previous = 0.075;
 float s_err0 = 0.0;
 float s_err1 = 0.0;
 float s_err2 = 0.0;
+float s_err3 = 0.0;
+float s_err4 = 0.0;
+float s_err5 = 0.0;
 //float Kp = 0.45;
 //float Ki = 0.15;
 //float Kd = 0.20;
@@ -157,8 +160,12 @@ float PID(void){
 		if(s_err0 <= -0.064 || 0.190 >= s_err0){
 			
 			servo_current = servo_previous + Kp*s_err0 + 
-				Ki*((s_err0+s_err1)/2) + Kd*(s_err0 - s_err1);
+				Ki*((s_err0+s_err1+s_err2+s_err3+s_err4+s_err5)/5) +
+				Kd*(s_err0 - s_err1);
 			servo_previous = servo_current;
+			s_err5 = s_err4;
+			s_err4 = s_err3;
+			s_err3 = s_err2;
 			s_err2 = s_err1;
 			s_err1 = s_err0;
 		}
