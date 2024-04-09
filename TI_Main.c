@@ -156,8 +156,8 @@ float PID(void){
 		}
 		if(s_err0 <= -0.064 || 0.190 >= s_err0){
 			
-			servo_current = servo_previous + Kp*(s_err0-s_err1) + 
-				Ki*((s_err0+s_err1)/2) + Kd*(s_err0-(2*s_err1)+s_err2);
+			servo_current = servo_previous + Kp*s_err0 + 
+				Ki*((s_err0+s_err1)/2) + Kd*(s_err0 - s_err1);
 			servo_previous = servo_current;
 			s_err2 = s_err1;
 			s_err1 = s_err0;
