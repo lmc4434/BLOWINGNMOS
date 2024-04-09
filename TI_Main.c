@@ -20,6 +20,8 @@
 #include "oled.h"
 #include <stdio.h>
 
+BOOLEAN debug = 1;
+
 extern unsigned char OLED_clr_data[1024];
 extern unsigned char OLED_TEXT_ARR[1024];
 extern unsigned char OLED_GRAPH_ARR[1024];
@@ -42,9 +44,9 @@ float setpoint = 0.075;
 float dt = 0.1; 
 
 
-float Kp = 1.0;
-float Ki = 0.1; 
-float Kd = 0.01; 
+float Kp = 0.45;
+float Ki = 0.15; 
+float Kd = 0.20; 
 
 float integral = 0;
 float prev_error = 0;
@@ -59,9 +61,13 @@ float calculatePID(float error) {
 }
 
 float updateServoPosition(float control_signal) {
-    // Update servo position based on control signal
-    servo_position += control_signal;
-    // Ensure servo position stays within the specified range
+    
+    servo_position = control_signal;
+		if(debug){
+    uart2_put("Servo Position : ");
+		sprintf(temp,"%i\n\r", (int)(servo_position*1000));
+		uart2_put(temp);
+		}
     if (servo_position < 0.05) {
         servo_position = 0.05;
     } else if (servo_position > 0.1) {
@@ -141,12 +147,21 @@ int find_center(void){
 
 float PID(void){
 	int center = find_center();
-	s_err0 = 63 - center; 
-	servo_current = servo_previous + Kp*(s_err0-s_err1) + 
-		Ki*((s_err0+s_err1)/2) + Kd*(s_err0-(2*s_err1)+s_err2);
-	servo_previous = servo_current;
-	s_err2 = s_err1;
-	s_err1 = s_err0;
+		//s_err0 = 0.001*(63 - center); 
+		s_err0 = 0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.05;
+		if(debug){
+		uart2_put("SERR0: ");
+		sprintf(temp,"%f\n\r", s_err0*1000);
+		uart2_put(temp);
+		}
+		if(s_err0 <= -0.064 || 0.190 >= s_err0){
+			
+			servo_current = servo_previous + Kp*(s_err0-s_err1) + 
+				Ki*((s_err0+s_err1)/2) + Kd*(s_err0-(2*s_err1)+s_err2);
+			servo_previous = servo_current;
+			s_err2 = s_err1;
+			s_err1 = s_err0;
+		}
 	return servo_current;
 }
 
@@ -194,10 +209,9 @@ BOOLEAN carpet_detection() {
 }
 }
 int main(void) {
+
     init();
-    TIMER_A2_PWM_DutyCycle(0.05, 1);
     delay(200);
-    uart0_put("INIT\n");
 		/*while (switch2_state == 0){
 			if (switch1_state == 0 && ){
 				OLED_draw_line(1,1, state1);
@@ -209,31 +223,38 @@ int main(void) {
 	}*/
     while(1) {
         bin_enc();
-        OLED_DisplayCameraData(BinaryData);
+        OLED_DisplayCameraData(SmoothData);
 				// Check This
 				int square_wave_center = find_center();
 				float error = setpoint - ((float)square_wave_center / 128) * (0.1 - 0.05) + 0.05;
-				float control_signal = calculatePID(error);
+				float control_signal = PID();
+				
 				//End
 			
 			
-			
+			if(debug){
 				uart2_put("Center Val: ");
 				sprintf(temp,"%i\n\r", find_center());
 				uart2_put(temp);
 				uart2_put("Servo Val: ");
 				sprintf(temp,"%f\n\r", PID());
 				uart2_put(temp);
-				
+			}
+			
         if (carpet_detection() != TRUE) {
             // This Needs to Turn a direction
-            forward(0.3);
+            forward(0.22);
             turn(updateServoPosition(control_signal));
+					if(debug){
 						uart2_put("Turn Amount: ");
 						sprintf(temp,"%i\n\r", (int)(updateServoPosition(control_signal)*1000));
 						uart2_put(temp);
+					}
         }
 				else{
+					if(debug){
+					uart2_put("I EAT CARPET : ");
+					}
 					stop_motors();
 					
 				}
