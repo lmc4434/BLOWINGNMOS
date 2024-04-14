@@ -1,0 +1,47 @@
+/*
+* Rochester Institute of Technology
+* Department of Computer Engineering
+* CMPE 460  Interfacing Digital Electronics
+* LJBeato
+* 1/14/2021
+*
+* Filename: BMP_Main.c
+*/
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "msp.h"
+#include "uart.h"
+#include "Timer32.h"
+#include "CortexM.h"
+#include "Common.h"
+#include "ADC.h"
+#include "controlpins.h"
+
+extern uint16_t line[128]; //Re-use line data prog from Camera
+extern BOOLEAN g_sendData;
+static char str[3];
+int BPM = 0;
+
+// ADC_In() gets the latest value from the ADC
+// ADC will be P4.7 A6
+
+int main (void){
+	DisableInterrupts();
+	uart0_init();
+	g_sendData = FALSE;
+	ControlPin_SI_Init();
+	ControlPin_CLK_Init();
+	ADC0_InitSWTriggerCh6();
+	EnableInterrupts();
+	
+	while(1){
+		if(g_sendData){
+			//Do for loop to find the amount of peaks in the ADC data
+			//Use a timer to calculate time to fill the line w/ g_sendData and calculate BPM
+			uart0_put("BMP: ");
+			sprintf(str,"%i\n\r",BPM); 
+			uart0_put(str);
+		}
+	}
+}
