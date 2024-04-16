@@ -20,7 +20,7 @@
 #include "oled.h"
 #include <stdio.h>
 
-BOOLEAN debug = 1;
+BOOLEAN debug = 0;
 
 extern unsigned char OLED_clr_data[1024];
 extern unsigned char OLED_TEXT_ARR[1024];
@@ -44,9 +44,9 @@ float setpoint = 0.075;
 float dt = 0.1; 
 
 
-float Kp = 0.45;
-float Ki = 0.15; 
-float Kd = 0.20; 
+float Kp = 0.03; //0.45
+float Ki = 0.00001; //0.15 //Large delay turn hard
+float Kd = 0.025; //0.20 //Return to center and turn hard
 
 float integral = 0;
 float prev_error = 0;
@@ -63,18 +63,18 @@ float calculatePID(float error) {
 float updateServoPosition(float control_signal) {
     
     servo_position = control_signal;
+    if (servo_position <= 0.05) {
+        servo_position = 0.05;
+    } else if (servo_position >= 0.1) {
+        servo_position = 0.1;
+    }
+    // Return the updated servo position
 		if(debug){
     uart2_put("Servo Position : ");
 		sprintf(temp,"%i\n\r", (int)(servo_position*1000));
 		uart2_put(temp);
 		}
-    if (servo_position < 0.05) {
-        servo_position = 0.05;
-    } else if (servo_position > 0.1) {
-        servo_position = 0.1;
-    }
-    // Return the updated servo position
-    return servo_position;
+    return 0.075;
 }
 
 //END PID SETUP
@@ -98,9 +98,6 @@ float s_err2 = 0.0;
 float s_err3 = 0.0;
 float s_err4 = 0.0;
 float s_err5 = 0.0;
-//float Kp = 0.45;
-//float Ki = 0.15;
-//float Kd = 0.20;
 
 int switch1_state = 0;
 int switch2_state = 0;
@@ -151,16 +148,21 @@ int find_center(void){
 float PID(void){
 	int center = find_center();
 		//s_err0 = 0.001*(63 - center); 
-		s_err0 = 0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.05;
+	//Something wrong with this calculation
+	if (center > 63){
+		s_err0 = -1*(0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.025);
+	} else {
+		s_err0 = 0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.025;
+	}
+	
 		if(debug){
 		uart2_put("SERR0: ");
 		sprintf(temp,"%f\n\r", s_err0*1000);
 		uart2_put(temp);
 		}
-		if(s_err0 <= -0.064 || 0.190 >= s_err0){
-			
+		//if(s_err0 <= -0.064 || 0.190 >= s_err0){
 			servo_current = servo_previous + Kp*s_err0 + 
-				Ki*((s_err0+s_err1+s_err2+s_err3+s_err4+s_err5)/5) +
+				Ki*((s_err0+s_err1+s_err2+s_err3+s_err4+s_err5)/6) +
 				Kd*(s_err0 - s_err1);
 			servo_previous = servo_current;
 			s_err5 = s_err4;
@@ -168,7 +170,7 @@ float PID(void){
 			s_err3 = s_err2;
 			s_err2 = s_err1;
 			s_err1 = s_err0;
-		}
+		//} 
 	return servo_current;
 }
 
@@ -193,10 +195,8 @@ void reverse_motors(float speed){
 }
 
 
-void turn(amount){
-	      TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
-        TIMER_A2_PWM_DutyCycle(amount, 1); // Centered
-
+void turn(float amount){
+    TIMER_A2_PWM_DutyCycle(amount, 1); 
 }
 
 
@@ -232,8 +232,8 @@ int main(void) {
         bin_enc();
         OLED_DisplayCameraData(SmoothData);
 				// Check This
-				int square_wave_center = find_center();
-				float error = setpoint - ((float)square_wave_center / 128) * (0.1 - 0.05) + 0.05;
+				//int square_wave_center = find_center();
+				//float error = setpoint - ((float)square_wave_center / 128) * (0.1 - 0.05) + 0.05;
 				float control_signal = PID();
 				
 				//End
@@ -244,13 +244,13 @@ int main(void) {
 				sprintf(temp,"%i\n\r", find_center());
 				uart2_put(temp);
 				uart2_put("Servo Val: ");
-				sprintf(temp,"%f\n\r", PID());
+				sprintf(temp,"%f\n\r", control_signal);
 				uart2_put(temp);
 			}
 			
         if (carpet_detection() != TRUE) {
             // This Needs to Turn a direction
-            forward(0.22);
+            forward(0.25);
             turn(updateServoPosition(control_signal));
 					if(debug){
 						uart2_put("Turn Amount: ");
