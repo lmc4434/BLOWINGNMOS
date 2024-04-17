@@ -20,7 +20,7 @@
 #include "oled.h"
 #include <stdio.h>
 
-BOOLEAN debug = 0;
+BOOLEAN debug = 1;
 
 extern unsigned char OLED_clr_data[1024];
 extern unsigned char OLED_TEXT_ARR[1024];
@@ -44,9 +44,9 @@ float setpoint = 0.075;
 float dt = 0.1; 
 
 
-float Kp = 0.03; //0.45
-float Ki = 0.00001; //0.15 //Large delay turn hard
-float Kd = 0.025; //0.20 //Return to center and turn hard
+float Kp = 0.045; //0.45
+float Ki = 0.0005; //0.15 //Large delay turn hard
+float Kd = 0.02; //0.20 //Return to center and turn hard
 
 float integral = 0;
 float prev_error = 0;
@@ -74,7 +74,7 @@ float updateServoPosition(float control_signal) {
 		sprintf(temp,"%i\n\r", (int)(servo_position*1000));
 		uart2_put(temp);
 		}
-    return 0.075;
+    return servo_position;
 }
 
 //END PID SETUP
@@ -147,8 +147,6 @@ int find_center(void){
 
 float PID(void){
 	int center = find_center();
-		//s_err0 = 0.001*(63 - center); 
-	//Something wrong with this calculation
 	if (center > 63){
 		s_err0 = -1*(0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.025);
 	} else {
@@ -171,6 +169,10 @@ float PID(void){
 			s_err2 = s_err1;
 			s_err1 = s_err0;
 		//} 
+		
+	if(center < 70 && center > 55){
+		servo_current = 0.075;
+	}
 	return servo_current;
 }
 
