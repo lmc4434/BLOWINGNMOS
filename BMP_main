@@ -20,12 +20,15 @@
 
 extern unsigned int ADC_val;
 extern uint16_t line[128];
+uint16_t beat[128];
 extern BOOLEAN g_sendData;
 
 unsigned long MillisecondCounter = 0;
 unsigned long temp = 0;
 static char str[100];
-int BPM = 0;
+unsigned long BPM = 0;
+BOOLEAN timer_run = 0;
+BOOLEAN valley = 0;
 
 // ADC_In() gets the latest value from the ADC
 // ADC will be P4.7 A6
@@ -33,7 +36,7 @@ int BPM = 0;
 void myDelay(void)
 {
 	volatile int j = 0;
-	for (j = 0; j < 800000; j++)
+	for (j = 0; j < 8000000; j++)
 	{
 		;
 	}
@@ -49,6 +52,7 @@ void Timer32_2_ISR(void)
 int main (void){
 	DisableInterrupts();
 	uart0_init();
+	uart0_put("Initialize UFART to Brint/r");
 	ControlPin_SI_Init();
 	ControlPin_CLK_Init();
 	ADC0_InitSWTriggerCh6();
@@ -58,30 +62,82 @@ int main (void){
 	EnableInterrupts();
 	
 	while(1){
+		myDelay();
 				//uart0_put("ADC VAL: ");
 				//sprintf(str,"%i\n\r",ADC_val); 
 				//uart0_put(str);
-		uart0_put("Initialize UFART to Brint");
-		sprintf(str,"%i\n\r",-1); // start value
-			uart0_put(str);
+		/*
 			for (int i = 0; i < 128; i++) 
 			{
-				sprintf(str,"%i\n\r", line[i]);
+				if(line[i] == 16383){
+					beat[i] = 1;
+				} else {
+					beat[i] = 0;
+				}
+			}
+
+			for (int i = 0; i < 128; i++) 
+			{
+				if(beat[i] == 1){
+					MillisecondCounter = 0;
+					timer_run = 1;
+				}
+				if(timer_run && beat[i] == 0){
+					valley = 1;
+				}
+				else if(beat[i] == 1 && valley){
+					temp = MillisecondCounter;
+					timer_run = 0;
+					valley = 0;
+				}
+			}
+			*/
+			//Move these values to be init inside contol pins CLK_Handler();
+			unsigned int val = ADC_val;
+			unsigned int next_val = ADC_val;
+			int peak = 0;
+			int valley = 0;
+			
+			if (val > next_val && peak == 0){
+				MillisecondCounter = 0;
+				peak = 1;
+			}
+			else if(val < next_val && valley == 0){
+				valley = 1;
+			}
+			else if (val > next_val && valley == 1){
+				temp = MillisecondCounter;
+				peak = 0;
+				valley = 0;
+				BPM = temp * 60000;
+				uart0_put("BPM: ");
+				sprintf(str,"%lu\n\r", BPM);
 				uart0_put(str);
 			}
-			sprintf(str,"%i\n\r",-2); // end value
-			uart0_put(str);
-		//myDelay();
+			
+			
+			/*if(ADC_val == 16383){
+					MillisecondCounter = 0;
+					timer_run = 1;
+				}
+				if(timer_run && ADC_val < 16383){
+					valley = 1;
+				}
+				else if(ADC_val == 16383 && valley){
+					temp = MillisecondCounter;
+					timer_run = 0;
+					valley = 0;
+				}
+			}
+				*/
+
 			/*if(line[i] == val){
 					MillisecondCounter = 0;
 				}
 				if(line[i] == val){
 					temp = MillisecondCounter;
 				}
-				temp * 60000;
-				uart0_put("BPM: ");
-				sprintf(str,"%i\n\r", temp);
-				uart0_put(str);
+				
 			*/
 			//Do for loop to find the amount of peaks in the ADC data
 			//Use MS counter from previous lab and scale to BPM (Timer 32)
