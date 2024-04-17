@@ -18,30 +18,75 @@
 #include "ADC.h"
 #include "controlpins.h"
 
-extern uint16_t line[128]; //Re-use line data prog from Camera
+extern unsigned int ADC_val;
+extern uint16_t line[128];
 extern BOOLEAN g_sendData;
-static char str[3];
+
+unsigned long MillisecondCounter = 0;
+unsigned long temp = 0;
+static char str[100];
 int BPM = 0;
 
 // ADC_In() gets the latest value from the ADC
 // ADC will be P4.7 A6
 
+void myDelay(void)
+{
+	volatile int j = 0;
+	for (j = 0; j < 800000; j++)
+	{
+		;
+	}
+}
+
+void Timer32_2_ISR(void)
+{
+
+		MillisecondCounter++;
+
+}
+
 int main (void){
 	DisableInterrupts();
 	uart0_init();
-	g_sendData = FALSE;
 	ControlPin_SI_Init();
 	ControlPin_CLK_Init();
 	ADC0_InitSWTriggerCh6();
+	// Setup Timer32-2 with a .001 second timeout.
+	// So use DEFAULT_CLOCK_SPEED/(1/0.001) = SystemCoreClock/1000
+	Timer32_2_Init(&Timer32_2_ISR, SystemCoreClock/1000, T32DIV1); // initialize Timer A32-1;
 	EnableInterrupts();
 	
 	while(1){
-		if(g_sendData){
-			//Do for loop to find the amount of peaks in the ADC data
-			//Use a timer to calculate time to fill the line w/ g_sendData and calculate BPM
-			uart0_put("BMP: ");
-			sprintf(str,"%i\n\r",BPM); 
+				//uart0_put("ADC VAL: ");
+				//sprintf(str,"%i\n\r",ADC_val); 
+				//uart0_put(str);
+		uart0_put("Initialize UFART to Brint");
+		sprintf(str,"%i\n\r",-1); // start value
 			uart0_put(str);
-		}
+			for (int i = 0; i < 128; i++) 
+			{
+				sprintf(str,"%i\n\r", line[i]);
+				uart0_put(str);
+			}
+			sprintf(str,"%i\n\r",-2); // end value
+			uart0_put(str);
+		//myDelay();
+			/*if(line[i] == val){
+					MillisecondCounter = 0;
+				}
+				if(line[i] == val){
+					temp = MillisecondCounter;
+				}
+				temp * 60000;
+				uart0_put("BPM: ");
+				sprintf(str,"%i\n\r", temp);
+				uart0_put(str);
+			*/
+			//Do for loop to find the amount of peaks in the ADC data
+			//Use MS counter from previous lab and scale to BPM (Timer 32)
+			//uart0_put("BMP: ");
+			//sprintf(str,"%i\n\r",BPM); 
+			//uart0_put(str);
 	}
 }
