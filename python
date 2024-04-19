@@ -1,0 +1,44 @@
+Kp = 0.45
+Ki = 0.05
+Kd = 0.02
+servo_current = 0.0
+servo_previous = 0.075
+
+s_err0 = 0.0
+s_err1 = 0.0
+s_err2 = 0.0
+
+
+def main():
+    global servo_current, servo_previous, s_err0, s_err1, s_err2
+
+    while True:
+        center = input("Enter the center value you want to check, q to quit: ")
+        if(center == 'q'):
+            print("Fucking n")
+            break
+        center = int(center)
+        if center > 63:
+            s_err0 = -1 * (0.075 - (center / 128) * (0.1 - 0.05) + 0.025)
+
+        else:
+            s_err0 = 0.075 - (center / 128) * (0.1 - 0.05) + 0.025
+
+
+        s_err0 = (0.075 - center / 128) * (0.1 - 0.05) + 0.025
+        servo_current = servo_previous + Kp * (s_err0 - s_err0) + Ki * 0.5 * (s_err0 + s_err1) + Kd * (
+                    s_err0 + 2 * s_err1 + s_err2)
+
+
+        servo_previous = servo_current
+        s_err2 = s_err1
+        s_err1 = s_err0
+
+        print("The value being put to the servo:", servo_current)
+        print("s_err0:", s_err0)
+        print("s_err1:", s_err1)
+        print("s_err2:", s_err2)
+
+
+if __name__ == "__main__":
+    main()
