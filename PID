@@ -1,0 +1,27 @@
+float PID(void){
+	int center = find_center();
+	if (center > 63){
+		s_err0 = -1*(0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.025);
+	} else {
+		s_err0 = 0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.025;
+	}
+	
+		if(debug){
+		uart2_put("SERR0: ");
+		sprintf(temp,"%f\n\r", s_err0*1000);
+		uart2_put(temp);
+		}
+		//if(s_err0 <= -0.064 || 0.190 >= s_err0){
+			servo_current = servo_previous + Kp*s_err0 + 
+				Ki*((s_err0+s_err1+s_err2+s_err3+s_err4+s_err5)/6) +
+				Kd*(s_err0 - s_err1);
+			servo_previous = servo_current;
+			s_err5 = s_err4;
+			s_err4 = s_err3;
+			s_err3 = s_err2;
+			s_err2 = s_err1;
+			s_err1 = s_err0;
+		//} 
+		
+	return servo_current;
+}
