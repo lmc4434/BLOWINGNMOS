@@ -20,7 +20,7 @@
 #include "oled.h"
 #include <stdio.h>
 
-BOOLEAN debug = 1;
+BOOLEAN debug = 0;
 
 extern unsigned char OLED_clr_data[1024];
 extern unsigned char OLED_TEXT_ARR[1024];
@@ -34,31 +34,22 @@ extern char str[STR_SIZE];
 extern uint16_t SmoothData[128];
 extern uint16_t BinaryData[128];
 char temp[STR_SIZE];
+float test = 0.0;
 
 // Global variables
 
 
 //PID SETUP
-float servo_position = 0.075;
-float setpoint = 0.075;
-float dt = 0.1; 
+float servo_position = 0.0;
 
-
-float Kp = 0.045; //0.45
-float Ki = 0.0005; //0.15 //Large delay turn hard
-float Kd = 0.02; //0.20 //Return to center and turn hard
 
 float integral = 0;
 float prev_error = 0;
 
-
-float calculatePID(float error) {
-    integral += error * dt;
-    float derivative = (error - prev_error) / dt;
-    float output = Kp * error + Ki * integral + Kd * derivative;
-    prev_error = error;
-    return output;
-}
+float Kp = 0.6; //0.6
+float Ki = 0.017; //0.15 //Large delay turn hard
+float Kd = 0.35; //0.20 //Return to center and turn hard
+BOOLEAN center_flag = 0;
 
 float updateServoPosition(float control_signal) {
     
@@ -75,6 +66,12 @@ float updateServoPosition(float control_signal) {
 		uart2_put(temp);
 		}
     return servo_position;
+}
+
+BOOLEAN carpet_detection() {
+    if (line[64] < 6000){
+			return TRUE;
+}
 }
 
 //END PID SETUP
@@ -146,13 +143,15 @@ int find_center(void){
 }
 
 float PID(void){
-	int center = find_center();
+	/*
 	if (center > 63){
 		s_err0 = -1*(0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.025);
 	} else {
 		s_err0 = 0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.025;
 	}
+	*/
 	
+		s_err0 = 0.075 - (((find_center()) / 128.00) * (0.1) + 0.025);
 		if(debug){
 		uart2_put("SERR0: ");
 		sprintf(temp,"%f\n\r", s_err0*1000);
@@ -162,25 +161,44 @@ float PID(void){
 			servo_current = servo_previous + Kp*s_err0 + 
 				Ki*((s_err0+s_err1+s_err2+s_err3+s_err4+s_err5)/6) +
 				Kd*(s_err0 - s_err1);
+		//if (carpet_detection() != TRUE){
+				if(find_center() > 60 && find_center() < 68){
+		
+					servo_current = 0.075;
+					s_err0 = 0.0;
+					s_err1 = 0.0;
+					s_err2 = 0.0;
+					s_err3 = 0.0;
+					s_err4 = 0.0;
+					s_err5 = 0.0;
+			//}
+			center_flag = 1;
+					
+			servo_current = updateServoPosition(servo_current);
 			servo_previous = servo_current;
 			s_err5 = s_err4;
 			s_err4 = s_err3;
 			s_err3 = s_err2;
 			s_err2 = s_err1;
 			s_err1 = s_err0;
+		} else {
+			center_flag = 0;
+		}
 		//} 
 		
-	if(center < 70 && center > 55){
-		servo_current = 0.075;
-	}
-	return servo_current;
+				uart2_put("Servo Val: ");
+				sprintf(temp,"%f\n\r", servo_current);
+				uart2_put(temp);
+		
+		return servo_current;
+
 }
 
-void forward(float speed) {
+void forward(float left_motor, float right_motor) {
     TIMER_A0_PWM_Init(4800, 0.0, 1);
-    TIMER_A0_PWM_Init(4800, speed, 2);
+    TIMER_A0_PWM_Init(4800, left_motor, 2);
     TIMER_A0_PWM_Init(4800, 0.0, 3);
-    TIMER_A0_PWM_Init(4800, speed, 4);
+    TIMER_A0_PWM_Init(4800, right_motor, 4);
 }
 
 void stop_motors(void) {
@@ -197,8 +215,9 @@ void reverse_motors(float speed){
 }
 
 
-void turn(float amount){
+float turn(float amount){
     TIMER_A2_PWM_DutyCycle(amount, 1); 
+	return amount;
 }
 
 
@@ -212,11 +231,7 @@ double generate_slope(int y2, int y1, int x2, int x1) {
 // Figure out if it's a parabola - take index and value at a certain point and then the 
 // exact point reflected over the axis of symmetry. If it is a slope of 0 +- a tol
 // It is a parabola and it means it's on carpet
-BOOLEAN carpet_detection() {
-    if (line[64] < 6000){
-			return TRUE;
-}
-}
+
 int main(void) {
 
     init();
@@ -230,43 +245,44 @@ int main(void) {
 			if (Switch2_Pressed == TRUE){
 				switch2_state += 1;
 	}*/
+	
+    forward(0.25,0.25);
     while(1) {
         bin_enc();
-        OLED_DisplayCameraData(SmoothData);
+        //OLED_DisplayCameraData(SmoothData);
 				// Check This
 				//int square_wave_center = find_center();
 				//float error = setpoint - ((float)square_wave_center / 128) * (0.1 - 0.05) + 0.05;
-				float control_signal = PID();
 				
 				//End
-			
+			test = turn(PID());
+			if(center_flag){
+				forward(0.50,0.50);
+			} else {
+				if(test >= 0.8){
+					forward(0.3, 0.45);
+				} else if(test <= 0.7){
+					forward(0.45, 0.3);
+				} else {
+					forward(0.50,0.50);
+				}
+				
+			}
 			
 			if(debug){
 				uart2_put("Center Val: ");
 				sprintf(temp,"%i\n\r", find_center());
 				uart2_put(temp);
-				uart2_put("Servo Val: ");
-				sprintf(temp,"%f\n\r", control_signal);
-				uart2_put(temp);
 			}
-			
-        if (carpet_detection() != TRUE) {
+        //if (carpet_detection() != TRUE) {
             // This Needs to Turn a direction
-            forward(0.25);
-            turn(updateServoPosition(control_signal));
-					if(debug){
-						uart2_put("Turn Amount: ");
-						sprintf(temp,"%i\n\r", (int)(updateServoPosition(control_signal)*1000));
-						uart2_put(temp);
-					}
-        }
-				else{
+        //}
+				//else{
 					if(debug){
 					uart2_put("I EAT CARPET : ");
 					}
-					stop_motors();
 					
-				}
+				//}
         }
     }
 
