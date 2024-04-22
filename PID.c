@@ -6,7 +6,7 @@
 
 #include "PID.h"
 
-BOOLEAN debug = 0;
+extern BOOLEAN debug;
 float servo_position = 0.0;
 float servo_previous = 0.075;
 float s_err0, s_err1, s_err2, s_err3, s_err4, s_err5 = 0.0;
