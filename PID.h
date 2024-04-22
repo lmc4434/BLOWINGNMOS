@@ -22,9 +22,9 @@
 #include "stdbool.h" // Include standard boolean library
 
 // Define constants
-#define Kp 1.0
-#define Ki 0.0
-#define Kd 0.0
+#define Kp 0.045
+#define Ki 0.0005
+#define Kd 0.02
 
 // Function declarations
 int find_center(void);
