@@ -6,6 +6,14 @@
 
 #include "PID.h"
 
+//Servo to angle conversion
+float servo_min = 0.05;
+float servo_max = 0.1;
+float angle_min = -60;
+float angle_max = 60;
+float servo_middle = 0.075;
+
+
 extern BOOLEAN debug;
 float servo_position = 0.0;
 float servo_previous = 0.075;
@@ -65,9 +73,7 @@ float updateServoPosition(float control_signal) {
 			servo_current = servo_previous + Kp*s_err0 + 
 				Ki*((s_err0+s_err1+s_err2+s_err3+s_err4+s_err5)/6) +
 				Kd*(s_err0 - s_err1);
-		//if (carpet_detection() != TRUE){
 				if(find_center() > 60 && find_center() < 68){
-		
 					servo_current = 0.075;
 					s_err0 = 0.0;
 					s_err1 = 0.0;
@@ -75,9 +81,13 @@ float updateServoPosition(float control_signal) {
 					s_err3 = 0.0;
 					s_err4 = 0.0;
 					s_err5 = 0.0;
-			//}
-			center_flag = 1;
+					center_flag = 1;
 					
+			}else{
+				if (find_center() > 55 && find_center() < 73){
+					center_flag = 1;
+				}
+				
 			servo_current = updateServoPosition(servo_current);
 			servo_previous = servo_current;
 			s_err5 = s_err4;
@@ -85,14 +95,25 @@ float updateServoPosition(float control_signal) {
 			s_err3 = s_err2;
 			s_err2 = s_err1;
 			s_err1 = s_err0;
-		} else {
+
 			center_flag = 0;
-		}
+		
 		if(debug){
 				uart2_put("Servo Val: ");
 				sprintf(temp,"%f\n\r", servo_current);
 				uart2_put(temp);
-		};
+		}
+	}
 		return servo_current;
 
 }
+ 
+float find_angle(float servo_val){
+	float slope = (angle_max - angle_min) / (servo_max - servo_min);
+	float angle = (servo_val - servo_min) * slope + angle_min;
+	return angle;
+	
+	
+}
+
+
