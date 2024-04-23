@@ -21,7 +21,8 @@
 #include "PID.h"
 #include <stdio.h>
 
-
+float wheelbase_length = 8.0;
+float wheelbase_width = 5.5;
 
 extern unsigned char OLED_clr_data[1024];
 extern unsigned char OLED_TEXT_ARR[1024];
@@ -112,6 +113,34 @@ float turn(float amount){
 		return amount;
 }
 
+void differential_turning(void){
+	
+	float forward_speed = 0.45;
+	
+	float turn_angle = find_angle(PID());
+	
+	if (turn_angle == 0){
+		turn_angle = 0.00001;
+	}
+	
+	float turning_radius = (wheelbase_length / tan(turn_angle));
+	
+	if (turn_angle > 0){//riht_turn
+		float left = 3.1415 * (2.0 * turning_radius + (wheelbase_width / 2.0));
+		float right = 3.1415 * (2.0 * turning_radius - (wheelbase_width / 2.0));
+		float proportion = left/right;
+		
+		forward(forward_speed, forward_speed/proportion);
+		
+	}else{//left_turn
+		
+		float left = 3.1415 * (2.0 * turning_radius + (wheelbase_width / 2.0));
+		float right = 3.1415 * (2.0 * turning_radius - (wheelbase_width / 2.0));
+		float proportion = right/left;
+		
+		forward(forward_speed/proportion, forward_speed);
+	}
+}
 
 int main(void) {
 
@@ -148,18 +177,13 @@ int main(void) {
 	if(Switch1_Pressed()){
     forward(0.25,0.25);
     while(1) {
-			test = turn(PID());
+	test = turn(PID());
 			if(center_flag){
 				forward(0.50,0.50);
-			} else {
-				if(test >= 0.8){
-					forward(0.3, 0.45);
-				} else if(test <= 0.7){
-					forward(0.45, 0.3);
-				} else {
-					forward(0.50,0.50);
-				}
 				
+			} else {
+				
+				differential_turning();
 			}
 			
 			if(debug){
@@ -167,10 +191,10 @@ int main(void) {
 				sprintf(temp,"%i\n\r", find_center());
 				uart2_put(temp);
 			}
-			if(debug){
-				uart2_put("I EAT CARPET : ");
-			}
+					if(debug){
+					uart2_put("I EAT CARPET : ");
+					}
 
+        }
     }
-	}
 }
