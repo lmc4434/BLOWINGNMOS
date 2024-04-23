@@ -18,7 +18,6 @@
 #include "systicktimer.h"
 #include "camera.h"
 #include "oled.h"
-#include "TI_Main.h"
 #include "PID.h"
 #include <stdio.h>
 
@@ -38,6 +37,7 @@ char temp[STR_SIZE];
 float test = 0.0;
 extern BOOLEAN center_flag;
 BOOLEAN debug = 0;
+int mode_control = 0;
 
 
 BOOLEAN carpet_detection() {
@@ -50,8 +50,10 @@ BOOLEAN carpet_detection() {
 
 
 void init() {
+	// UART
     uart2_init();
 		uart2_put("Bluetooth on");
+	// MOTORS
     P3->SEL0 &= ~BIT6;
     P3->SEL0 &= ~BIT7;
     P3->SEL1 &= ~BIT6;
@@ -60,15 +62,26 @@ void init() {
     P3->DIR |= BIT7;
     P3->OUT |= BIT6;
     P3->OUT |= BIT7;
+	// SWITCHES
     Switch1_Init();
     Switch2_Init();
+	//LEDS
+		LED1_Init();
+		LED2_Init();
+		LED1_Off();
+		LED2_Off();
+	// TIMERS
     TIMER_A2_PWM_Init((48000000/50/64), 0.1, 1);
     TIMER_A2_PWM_DutyCycle(0.075, 1); 
+	// CAMERA
     INIT_Camera();
+	// OLED
+	/*
     OLED_Init();
     OLED_display_on();
     OLED_display_clear();
     OLED_display_on();
+		*/
 }
 
 
@@ -102,12 +115,39 @@ float turn(float amount){
 
 int main(void) {
 
-    init();
+		init();
     delay(200);
 	
+		if(Switch2_Pressed()){
+			if(mode_control == 0){
+				P2->OUT &= ~BIT2;		//BLUE off
+				P2->OUT |= BIT0;		//RED on
+				//Motor control settings
+				
+				mode_control = 1;
+			} else if (mode_control == 1){
+				P2->OUT &= ~BIT0;		//RED off
+				P2->OUT |= BIT1;		//GREEN on
+				//Motor control settings
+				
+				mode_control = 2;
+			} else if (mode_control == 2){
+				P2->OUT &= ~BIT1;		//GREEN off
+				P2->OUT |= BIT2;		//BLUE on
+				//Motor control settings
+				
+				mode_control = 0;
+			} else {
+				P2->OUT &= ~BIT0;		//RED off
+				P2->OUT &= ~BIT1;		//GREEN off
+				P2->OUT &= ~BIT2;		//BLUE off
+				mode_control = 0;
+			}
+		}
+		
+	if(Switch1_Pressed()){
     forward(0.25,0.25);
     while(1) {
-
 			test = turn(PID());
 			if(center_flag){
 				forward(0.50,0.50);
@@ -127,9 +167,10 @@ int main(void) {
 				sprintf(temp,"%i\n\r", find_center());
 				uart2_put(temp);
 			}
-					if(debug){
-					uart2_put("I EAT CARPET : ");
-					}
+			if(debug){
+				uart2_put("I EAT CARPET : ");
+			}
 
-        }
     }
+	}
+}
