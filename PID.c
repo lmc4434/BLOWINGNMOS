@@ -9,8 +9,8 @@
 //Servo to angle conversion
 float servo_min = 0.05;
 float servo_max = 0.1;
-float angle_min = -60;
-float angle_max = 60;
+float angle_min = -60.0;
+float angle_max = 60.0;
 float servo_middle = 0.075;
 
 
