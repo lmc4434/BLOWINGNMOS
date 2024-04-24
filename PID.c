@@ -5,6 +5,12 @@
  */
 
 #include "PID.h"
+#include "uart.h"
+
+
+float Kp = 0.6; //0.6
+float Ki = 0.017; //0.15 //Large delay turn hard
+float Kd = 0.35; //0.20 //Return to center and turn hard
 
 //Servo to angle conversion
 float servo_min = 0.05;
@@ -60,8 +66,15 @@ float updateServoPosition(float control_signal) {
 		}
     return servo_position;
 }
- float PID(void){
 
+ float PID(void){
+	/*
+	if (center > 63){
+		s_err0 = -1*(0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.025);
+	} else {
+		s_err0 = 0.075 - ((float)center / 128) * (0.1 - 0.05) + 0.025;
+	}
+	*/
 	
 		s_err0 = 0.075 - (((find_center()) / 128.00) * (0.1) + 0.025);
 		if(debug){
@@ -73,7 +86,9 @@ float updateServoPosition(float control_signal) {
 			servo_current = servo_previous + Kp*s_err0 + 
 				Ki*((s_err0+s_err1+s_err2+s_err3+s_err4+s_err5)/6) +
 				Kd*(s_err0 - s_err1);
+		//if (carpet_detection() != TRUE){
 				if(find_center() > 60 && find_center() < 68){
+		
 					servo_current = 0.075;
 					s_err0 = 0.0;
 					s_err1 = 0.0;
@@ -81,13 +96,9 @@ float updateServoPosition(float control_signal) {
 					s_err3 = 0.0;
 					s_err4 = 0.0;
 					s_err5 = 0.0;
-					center_flag = 1;
+			//}
+			center_flag = 1;
 					
-			}else{
-				if (find_center() > 55 && find_center() < 73){
-					center_flag = 1;
-				}
-				
 			servo_current = updateServoPosition(servo_current);
 			servo_previous = servo_current;
 			s_err5 = s_err4;
@@ -95,15 +106,19 @@ float updateServoPosition(float control_signal) {
 			s_err3 = s_err2;
 			s_err2 = s_err1;
 			s_err1 = s_err0;
-
-			center_flag = 0;
+		} else {
+			if (find_center() > 55 && find_center() < 73){
+					center_flag = 1;
+				} else {
+					center_flag = 0;
+				}
+		}
+		//} 
 		
-		if(debug){
 				uart2_put("Servo Val: ");
 				sprintf(temp,"%f\n\r", servo_current);
 				uart2_put(temp);
-		}
-	}
+		
 		return servo_current;
 
 }
@@ -115,5 +130,3 @@ float find_angle(float servo_val){
 	
 	
 }
-
-
