@@ -39,6 +39,11 @@ float wheelbase_width = 5.5;
 char temp[STR_SIZE];
 float test = 0.0;
 
+float Kp = 0.6; //0.6
+float Ki = 0.017; //0.15 //Large delay turn hard
+float Kd = 0.35; //0.20 //Return to center and turn hard
+float forward_speed = 0.45;  //Motor speed
+
 
 BOOLEAN carpet_detection() {
     if (line[64] < 6000){
@@ -116,8 +121,6 @@ float turn(float amount){
 
 void differential_turning(void){
 	
-	float forward_speed = 0.60;
-	
 	double turn_angle = find_angle(PID());
 	
 	if (turn_angle == 0){
@@ -131,7 +134,7 @@ void differential_turning(void){
 		float right = 3.1415 * (2.0 * turning_radius - (wheelbase_width / 2.0));
 		float proportion = left/right;
 		
-		forward(forward_speed/proportion, forward_speed);
+		forward((forward_speed*0.8)/proportion, forward_speed*0.8);
 		
 	}else{//left_turn
 		
@@ -139,7 +142,7 @@ void differential_turning(void){
 		float right = 3.1415 * (2.0 * turning_radius - (wheelbase_width / 2.0));
 		float proportion = right/left;
 		
-		forward(forward_speed, forward_speed/proportion);
+		forward(forward_speed*0.8, (forward_speed*0.8)/proportion);
 	}
 }
 
@@ -158,33 +161,45 @@ int main(void) {
 				P2->OUT &= ~BIT2;		//BLUE off
 				P2->OUT |= BIT0;		//RED on
 				//Motor control settings
-				
+				forward_speed = 0.4;
+				//Kp = ; need tune
+				//Ki = ; need tune
+				//Kd = ; need tune
 				mode_control = 1;
+				
+				
 			} else if (mode_control == 1){
 				P2->OUT &= ~BIT0;		//RED off
 				P2->OUT |= BIT1;		//GREEN on
 				//Motor control settings
-				
+				forward_speed = 0.5;
+				Kp = 0.6;
+				Ki = 0.017; 
+				Kd = 0.35;
 				mode_control = 2;
+				
+				
 			} else if (mode_control == 2){
 				P2->OUT &= ~BIT1;		//GREEN off
 				P2->OUT |= BIT2;		//BLUE on
 				//Motor control settings
-				
+				forward_speed = 0.6;
+				//Kp = ; need tune
+				//Ki = ; need tune
+				//Kd = ; need tune
 				mode_control = 0;
 			}
 		}
 	}
-	
-		uart0_put("Go");
-    forward(0.60,0.60);
+
+    forward(forward_speed, forward_speed);
     while(1) {
 			bin_enc();
 			test = turn(PID());
 			if(center_flag){
-				forward(0.60,0.60);
+				forward(forward_speed, forward_speed);
 			} else {
-				forward(0.40,0.40);
+				forward(forward_speed*0.8,forward_speed*0.8);
 				//differential_turning();
 				}
 				
