@@ -31,6 +31,11 @@ extern char str[STR_SIZE];
 extern uint16_t SmoothData[128];
 
 extern BOOLEAN center_flag;
+extern BOOLEAN center_flag_hold;
+
+
+//Value to easily turn on diff turning
+BOOLEAN diff_turn = 0;
 
 BOOLEAN debug = 0;
 int mode_control = 0;
@@ -193,15 +198,25 @@ int main(void) {
 	}
 
     forward(forward_speed, forward_speed);
+	
+	
     while(1) {
 			bin_enc();
 			test = turn(PID());
 			if(center_flag){
 				forward(forward_speed, forward_speed);
 			} else {
-				forward(forward_speed*0.8,forward_speed*0.8);
-				//differential_turning();
+				if (center_flag_hold == 1){
+					reverse_motors(-0.2);
+					delay(100000);
+					center_flag_hold = 0;
 				}
+				if (diff_turn == 0){
+					
+				forward(forward_speed*0.8,forward_speed*0.8);
+				}else{
+					differential_turning();
+				}}
 				
 			}
 			
@@ -215,3 +230,5 @@ int main(void) {
 			}
 
     }
+
+		
