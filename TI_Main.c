@@ -19,26 +19,25 @@
 #include "camera.h"
 #include "oled.h"
 #include "PID.h"
+#include "math.h"
 #include <stdio.h>
 
-float wheelbase_length = 8.0;
-float wheelbase_width = 5.5;
 
 extern unsigned char OLED_clr_data[1024];
 extern unsigned char OLED_TEXT_ARR[1024];
 extern unsigned char OLED_GRAPH_ARR[1024];
-//Set up OLED variables
-unsigned char state1[16] = "State 1";
-unsigned char state2[16] = "State 2";
-unsigned char state3[16] = "State 3";
 extern uint16_t line[128];
 extern char str[STR_SIZE];
 extern uint16_t SmoothData[128];
-char temp[STR_SIZE];
-float test = 0.0;
+
 extern BOOLEAN center_flag;
+
 BOOLEAN debug = 0;
 int mode_control = 0;
+float wheelbase_length = 8.0;
+float wheelbase_width = 5.5;
+char temp[STR_SIZE];
+float test = 0.0;
 
 
 BOOLEAN carpet_detection() {
@@ -54,6 +53,8 @@ void init() {
 	// UART
     uart2_init();
 		uart2_put("Bluetooth on");
+	uart0_init();
+	uart0_put("Init");
 	// MOTORS
     P3->SEL0 &= ~BIT6;
     P3->SEL0 &= ~BIT7;
@@ -115,9 +116,9 @@ float turn(float amount){
 
 void differential_turning(void){
 	
-	float forward_speed = 0.45;
+	float forward_speed = 0.60;
 	
-	float turn_angle = find_angle(PID());
+	double turn_angle = find_angle(PID());
 	
 	if (turn_angle == 0){
 		turn_angle = 0.00001;
@@ -130,7 +131,7 @@ void differential_turning(void){
 		float right = 3.1415 * (2.0 * turning_radius - (wheelbase_width / 2.0));
 		float proportion = left/right;
 		
-		forward(forward_speed, forward_speed/proportion);
+		forward(forward_speed/proportion, forward_speed);
 		
 	}else{//left_turn
 		
@@ -138,16 +139,21 @@ void differential_turning(void){
 		float right = 3.1415 * (2.0 * turning_radius - (wheelbase_width / 2.0));
 		float proportion = right/left;
 		
-		forward(forward_speed/proportion, forward_speed);
+		forward(forward_speed, forward_speed/proportion);
 	}
 }
+
 
 int main(void) {
 
 		init();
-    delay(200);
-	
+
+	if(debug){
+		OLED_DisplayCameraData(SmoothData);
+	}
+	while(!Switch1_Pressed()){
 		if(Switch2_Pressed()){
+			delay(4000000);
 			if(mode_control == 0){
 				P2->OUT &= ~BIT2;		//BLUE off
 				P2->OUT |= BIT0;		//RED on
@@ -166,24 +172,22 @@ int main(void) {
 				//Motor control settings
 				
 				mode_control = 0;
-			} else {
-				P2->OUT &= ~BIT0;		//RED off
-				P2->OUT &= ~BIT1;		//GREEN off
-				P2->OUT &= ~BIT2;		//BLUE off
-				mode_control = 0;
 			}
 		}
-		
-	if(Switch1_Pressed()){
-    forward(0.25,0.25);
+	}
+	
+		uart0_put("Go");
+    forward(0.60,0.60);
     while(1) {
-	test = turn(PID());
+			bin_enc();
+			test = turn(PID());
 			if(center_flag){
-				forward(0.50,0.50);
-				
+				forward(0.60,0.60);
 			} else {
+				forward(0.40,0.40);
+				//differential_turning();
+				}
 				
-				differential_turning();
 			}
 			
 			if(debug){
@@ -191,10 +195,8 @@ int main(void) {
 				sprintf(temp,"%i\n\r", find_center());
 				uart2_put(temp);
 			}
-					if(debug){
-					uart2_put("I EAT CARPET : ");
-					}
+			if(debug){
+				uart2_put("I EAT CARPET : ");
+			}
 
-        }
     }
-}
