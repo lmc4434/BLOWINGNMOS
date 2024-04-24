@@ -8,9 +8,9 @@
 #include "uart.h"
 
 
-float Kp = 0.6; //0.6
-float Ki = 0.017; //0.15 //Large delay turn hard
-float Kd = 0.35; //0.20 //Return to center and turn hard
+extern float Kp; //0.6
+extern float Ki;
+extern float Kd; //0.20 //Return to center and turn hard
 
 //Servo to angle conversion
 float servo_min = 0.05;
@@ -26,6 +26,9 @@ float servo_previous = 0.075;
 float s_err0, s_err1, s_err2, s_err3, s_err4, s_err5 = 0.0;
 extern uint16_t BinaryData[128];
 BOOLEAN center_flag = 0;
+
+BOOLEAN center_flag_hold = 0;
+
 extern char temp[STR_SIZE];
 float servo_current = 0.0;
 
@@ -98,6 +101,7 @@ float updateServoPosition(float control_signal) {
 					s_err5 = 0.0;
 			//}
 			center_flag = 1;
+			center_flag_hold = 1;
 					
 			servo_current = updateServoPosition(servo_current);
 			servo_previous = servo_current;
@@ -109,6 +113,7 @@ float updateServoPosition(float control_signal) {
 		} else {
 			if (find_center() > 55 && find_center() < 73){
 					center_flag = 1;
+					center_flag_hold = 1;
 				} else {
 					center_flag = 0;
 				}
