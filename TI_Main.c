@@ -38,16 +38,18 @@ extern BOOLEAN center_flag_hold;
 BOOLEAN diff_turn = 0;
 
 BOOLEAN debug = 0;
+BOOLEAN debug2 = 0;
 int mode_control = 0;
 float wheelbase_length = 8.0;
 float wheelbase_width = 5.5;
 char temp[STR_SIZE];
 float test = 0.0;
+int stop_delay = 0;
 
 float Kp = 0.6; //0.6
 float Ki = 0.017; //0.15 //Large delay turn hard
 float Kd = 0.35; //0.20 //Return to center and turn hard
-float forward_speed = 0.45;  //Motor speed
+float forward_speed = 0.50;  //Motor speed
 
 
 BOOLEAN carpet_detection() {
@@ -121,20 +123,22 @@ void reverse_motors(float speed){
 
 float turn(float amount){
     TIMER_A2_PWM_DutyCycle(amount, 1); 
+
 		return amount;
 }
 
-void differential_turning(void){
-	
-	double turn_angle = find_angle(PID());
-	
+void differential_turning(float amount){
+
+	double turn_angle = find_angle(updateServoPosition(amount));
+
 	if (turn_angle == 0){
 		turn_angle = 0.00001;
 	}
 	
-	float turning_radius = (wheelbase_length / tan(turn_angle));
 	
-	if (turn_angle > 0){//riht_turn
+	float turning_radius = (wheelbase_length / tan(turn_angle));
+
+	if (turn_angle < 0){//riht_turn
 		float left = 3.1415 * (2.0 * turning_radius + (wheelbase_width / 2.0));
 		float right = 3.1415 * (2.0 * turning_radius - (wheelbase_width / 2.0));
 		float proportion = left/right;
@@ -162,21 +166,27 @@ int main(void) {
 	while(!Switch1_Pressed()){
 		if(Switch2_Pressed()){
 			delay(4000000);
-			if(mode_control == 0){
+			
+			//DO NOT TOUCH, RUNS GREAT
+			if(mode_control == 0){ 
 				P2->OUT &= ~BIT2;		//BLUE off
 				P2->OUT |= BIT0;		//RED on
 				//Motor control settings
-				forward_speed = 0.4;
-				//Kp = ; need tune
-				//Ki = ; need tune
-				//Kd = ; need tune
+				stop_delay = 100000;
+				forward_speed = 0.47;
+				Kp = 0.6; 
+				Ki = 0.017;
+				Kd = 0.35;
 				mode_control = 1;
+				//END DO NOT TOUCH
 				
-				
+				//Worked Faster and well
 			} else if (mode_control == 1){
 				P2->OUT &= ~BIT0;		//RED off
 				P2->OUT |= BIT1;		//GREEN on
 				//Motor control settings
+				diff_turn = 0;
+				stop_delay = 200000;
 				forward_speed = 0.5;
 				Kp = 0.6;
 				Ki = 0.017; 
@@ -188,11 +198,13 @@ int main(void) {
 				P2->OUT &= ~BIT1;		//GREEN off
 				P2->OUT |= BIT2;		//BLUE on
 				//Motor control settings
-				forward_speed = 0.6;
-				//Kp = ; need tune
-				//Ki = ; need tune
-				//Kd = ; need tune
-				mode_control = 0;
+				diff_turn = 0;
+				stop_delay = 350000;
+				forward_speed = 0.55;
+				Kp = 0.65;
+				Ki = 0.017; 
+				Kd = 0.35;
+				mode_control = 3;
 			}
 		}
 	}
@@ -208,14 +220,14 @@ int main(void) {
 			} else {
 				if (center_flag_hold == 1){
 					reverse_motors(-0.2);
-					delay(100000);
+					delay(stop_delay);
 					center_flag_hold = 0;
 				}
 				if (diff_turn == 0){
 					
 				forward(forward_speed*0.8,forward_speed*0.8);
 				}else{
-					differential_turning();
+					differential_turning(test);
 				}}
 				
 			}
