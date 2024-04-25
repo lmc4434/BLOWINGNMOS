@@ -111,7 +111,7 @@ float updateServoPosition(float control_signal) {
 			s_err2 = s_err1;
 			s_err1 = s_err0;
 		} else {
-			if (find_center() > 55 && find_center() < 73){
+			if (find_center() > 53 && find_center() < 75){
 					center_flag = 1;
 					center_flag_hold = 1;
 				} else {
@@ -119,10 +119,11 @@ float updateServoPosition(float control_signal) {
 				}
 		}
 		//} 
-		
-				uart2_put("Servo Val: ");
+		/*
+				uart2_put("Servo Val in PID: ");
 				sprintf(temp,"%f\n\r", servo_current);
 				uart2_put(temp);
+		*/
 		
 		return servo_current;
 
