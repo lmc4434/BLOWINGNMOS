@@ -25,7 +25,7 @@
 
 
 
-int bin_threshold = 15000;
+int bin_threshold = 13000; //15000
 uint16_t SmoothData[128];
 uint16_t BinaryData[128];
 extern uint16_t line[128];
@@ -56,3 +56,4 @@ void bin_enc(void){
 		}
 	}
 }
+
