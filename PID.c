@@ -90,7 +90,7 @@ float updateServoPosition(float control_signal) {
 				Ki*((s_err0+s_err1+s_err2+s_err3+s_err4+s_err5)/6) +
 				Kd*(s_err0 - s_err1);
 		//if (carpet_detection() != TRUE){
-				if(find_center() > 60 && find_center() < 68){
+				if(find_center() > 57 && find_center() < 71){//60 and 68
 		
 					servo_current = 0.075;
 					s_err0 = 0.0;
@@ -111,7 +111,7 @@ float updateServoPosition(float control_signal) {
 			s_err2 = s_err1;
 			s_err1 = s_err0;
 		} else {
-			if (find_center() > 53 && find_center() < 75){
+			if (find_center() > 50 && find_center() < 78){//50 and 78
 					center_flag = 1;
 					center_flag_hold = 1;
 				} else {
