@@ -46,10 +46,12 @@ char temp[STR_SIZE];
 float test = 0.0;
 int stop_delay = 0;
 
+float turn_multiplier = 0.0;
 float Kp = 0.6; //0.6
 float Ki = 0.017; //0.15 //Large delay turn hard
 float Kd = 0.35; //0.20 //Return to center and turn hard
 float forward_speed = 0.50;  //Motor speed
+float reverse_val = 0;
 
 
 BOOLEAN carpet_detection() {
@@ -173,7 +175,9 @@ int main(void) {
 				P2->OUT |= BIT0;		//RED on
 				//Motor control settings
 				stop_delay = 100000;
-				forward_speed = 0.47;
+				forward_speed = 0.42; // 0.47
+				reverse_val = -0.25;
+				turn_multiplier = 0.9;
 				Kp = 0.6; 
 				Ki = 0.017;
 				Kd = 0.35;
@@ -185,13 +189,27 @@ int main(void) {
 				P2->OUT &= ~BIT0;		//RED off
 				P2->OUT |= BIT1;		//GREEN on
 				//Motor control settings
+				/*
+				diff_turn = 0;
+				
+				reverse_val = -0.35; //0.2
+				stop_delay = 200000;
+				forward_speed = 0.48; //0.5
+				turn_multiplier = 0.85; //0.9
+				Kp = 0.60;  //0.61
+				Ki = 0.017; 
+				Kd = 0.35;
+				*/
 				diff_turn = 0;
 				stop_delay = 200000;
-				forward_speed = 0.5;
-				Kp = 0.6;
+				forward_speed = 0.47;
+				reverse_val = -0.42;
+				turn_multiplier = 0.92; //0.85
+				Kp = 0.65;   //0.7
 				Ki = 0.017; 
 				Kd = 0.35;
 				mode_control = 2;
+			
 				
 				
 			} else if (mode_control == 2){
@@ -199,9 +217,11 @@ int main(void) {
 				P2->OUT |= BIT2;		//BLUE on
 				//Motor control settings
 				diff_turn = 0;
-				stop_delay = 350000;
-				forward_speed = 0.55;
-				Kp = 0.65;
+				stop_delay = 220000;
+				forward_speed = 0.52;
+				reverse_val = -0.45;
+				turn_multiplier = 0.9; //0.85
+				Kp = 0.60;   //0.7
 				Ki = 0.017; 
 				Kd = 0.35;
 				mode_control = 3;
@@ -219,13 +239,12 @@ int main(void) {
 				forward(forward_speed, forward_speed);
 			} else {
 				if (center_flag_hold == 1){
-					reverse_motors(-0.2);
+					reverse_motors(reverse_val);
 					delay(stop_delay);
 					center_flag_hold = 0;
 				}
 				if (diff_turn == 0){
-					
-				forward(forward_speed*0.8,forward_speed*0.8);
+					forward(forward_speed*turn_multiplier,forward_speed*turn_multiplier);
 				}else{
 					differential_turning(test);
 				}}
@@ -242,5 +261,3 @@ int main(void) {
 			}
 
     }
-
-		
